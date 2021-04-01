@@ -21,12 +21,12 @@ public class Node {
     /**
      * Has this node been selected for the failure set, S.
      */
-    private boolean selectedForFailureSet;
+    private boolean isSelectedForFailureSet;
     /**
      * Is this node near a node in the failure set? If so, this list will
      * contain the ID of that failure.
      */
-    private boolean nearFailedNode;
+    private boolean isNearFailedNode;
 
     /**
      * The name of this node.
@@ -34,14 +34,14 @@ public class Node {
     private String name;
 
     /**
-     * A constructor. The caller of this function will need to set the name and
+     * A constructor. The caller of this constructor will need to set the name and
      * neighbors manually.
      */
     public Node() {
         neighbors = new ArrayList<>(2);
         height = Integer.MAX_VALUE;
-        selectedForFailureSet = false;
-        nearFailedNode = false;
+        isSelectedForFailureSet = false;
+        isNearFailedNode = false;
     }
 
     /**
@@ -68,12 +68,13 @@ public class Node {
 
     /**
      * Sets this node, and its neighbors, as being near a failed node
-     *
-     * @param d the distance from this node that still counts as nearby.
+     * This method may redundantly set nodes as nearFailedNode.  This can be 
+     * avoided by giving nearFailedNodes an ID, however for simplicities sake,
+     * we accept the redundancy.
      */
     private void setNearSelected(int d) {
         if (d < 0) return;
-        nearFailedNode = true;
+        isNearFailedNode = true;
         neighbors.forEach(node -> node.setNearSelected(d - 1));
     }
 
@@ -87,10 +88,10 @@ public class Node {
      */
     private void selectNode(int neighborDistance) {
 
-        if (selectedForFailureSet)
+        if (isSelectedForFailureSet)
             throw new RuntimeException("This node is already selected");
 
-        selectedForFailureSet = true;
+        isSelectedForFailureSet = true;
         setNearSelected(neighborDistance);
     }
 
@@ -112,7 +113,7 @@ public class Node {
      * @return the component size of this node.
      */
     private int componentSize() {
-        if (isNearFailedNode()) return componentSize = 0;
+        if (isNearFailedNode) return componentSize = 0;
         if (isLeaf()) return componentSize = 1;
 
         return componentSize = 1 + childeren().mapToInt(child -> child.componentSize()).sum();
@@ -165,24 +166,6 @@ public class Node {
         return childeren().findAny().isEmpty();
     }
 
-    /**
-     * Has this node been selected for the failure set?
-     *
-     * @return true if this node has been selected for the failure set, false
-     * otherwise.
-     */
-    public boolean isSelected() {
-        return selectedForFailureSet;
-    }
-
-    /**
-     * Has this node been selected as a node near a failure node.
-     *
-     * @return true if this node is near a failure node, false otherwise.
-     */
-    public boolean isNearFailedNode() {
-        return this.nearFailedNode;
-    }
 
     /**
      * Finds a minimal set of nodes for failure.
@@ -234,7 +217,7 @@ public class Node {
      */
     private boolean containsIlegalComponent(int maxComponentSize, int startDepth) {
 
-        if (startDepth < 0 && isNearFailedNode()) return false;
+        if (startDepth < 0 && isNearFailedNode) return false;
 
         if (startDepth >= 0 && childeren().anyMatch(child -> child.containsIlegalComponent(maxComponentSize, startDepth - 1)))
             return true;
@@ -251,7 +234,7 @@ public class Node {
         return childeren()
                 .mapToInt(node -> node.numSelected())
                 .sum()
-                + (isSelected() ? 1 : 0);
+                + (isSelectedForFailureSet ? 1 : 0);
     }
 
     /**
@@ -300,8 +283,8 @@ public class Node {
      */
     public String toString(String indent) {
         String local = indent + name + ": " + "\n"
-                + indent + "failed = " + isSelected() + "\n"
-                + indent + "isNearFailed = " + isNearFailedNode() + "\n";
+                + indent + "failed = " + isSelectedForFailureSet + "\n"
+                + indent + "isNearFailed = " + isNearFailedNode + "\n";
 //                + indent + "component size = " + getComponentSize() + "\n";
         if (hasChildren()) {
             local += indent + "children: " + childeren().map(child -> child.name).reduce((s1, s2) -> s1 + ", " + s2).get() + "\n";
