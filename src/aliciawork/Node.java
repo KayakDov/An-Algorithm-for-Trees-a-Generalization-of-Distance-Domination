@@ -101,7 +101,7 @@ public class Node {
      *
      * @return a stream of children for this node.
      */
-    public Stream<Node> childeren() {
+    public Stream<Node> children() {
         return neighbors.stream().parallel().filter(node -> node.getHeight() > getHeight());
     }
 
@@ -116,7 +116,7 @@ public class Node {
         if (isNearFailedNode) return componentSize = 0;
         if (isLeaf()) return componentSize = 1;
 
-        return componentSize = 1 + childeren().mapToInt(child -> child.componentSize()).sum();
+        return componentSize = 1 + children().mapToInt(child -> child.componentSize()).sum();
     }
 
     /**
@@ -145,7 +145,7 @@ public class Node {
      */
     private void setHeight(int height) {
         this.height = height;
-        childeren().forEach(child -> child.setHeight(height + 1));
+        children().forEach(child -> child.setHeight(height + 1));
 
     }
 
@@ -163,7 +163,7 @@ public class Node {
      * @return true if this node is a leaf, false otherwise
      */
     private boolean isLeaf() {
-        return childeren().findAny().isEmpty();
+        return children().findAny().isEmpty();
     }
 
 
@@ -177,12 +177,12 @@ public class Node {
      */
     public void setSelections(int maxSurvivingComponentSize, int neighborDistance) {
 
-        childeren().forEach(child -> child.setSelections(maxSurvivingComponentSize, neighborDistance));
+        children().forEach(child -> child.setSelections(maxSurvivingComponentSize, neighborDistance));
 
         setComponentSizes();
 
         if (!parentCanHandleThis(neighborDistance, maxSurvivingComponentSize)
-                || (getHeight() == 0 && containsIlegalComponent(maxSurvivingComponentSize, -1)))
+                || (getHeight() == 0 && containsIllegalComponent(maxSurvivingComponentSize, -1)))
 
             selectNode(neighborDistance);
 
@@ -200,29 +200,27 @@ public class Node {
      * node to be a failed node, true. Otherwise false.
      */
     private boolean parentCanHandleThis(int neighborDistance, int maxCompnonetSize) {
-        return !containsIlegalComponent(maxCompnonetSize, neighborDistance - 1);
+        return !containsIllegalComponent(maxCompnonetSize, neighborDistance - 1);
     }
 
     /**
      * Does this sub tree contain any components that exceed the max component
-     * size. TODO: currently this method searches the entire sub-tree, but it
-     * shouldn't need to. Also, it looks like it calls component size from every
-     * node, like a bad fibo recursive algorithm that memoization, or iteration
-     * can fix.
-     *
+     * size. 
+     * 
      * @param maxComponentSize the maximum size a component may have without
      * requiring without requiring additional nodes to fail.
+     * @param searchDistance How much farther needs to be searched for an illegal component
      * @return true if this node's sub tree contains components greater than the
      * max component size, false otherwise.
      */
-    private boolean containsIlegalComponent(int maxComponentSize, int startDepth) {
+    private boolean containsIllegalComponent(int maxComponentSize, int searchDistance) {
 
-        if (startDepth < 0 && isNearFailedNode) return false;
+        if (searchDistance < 0 && isNearFailedNode) return false;
 
-        if (startDepth >= 0 && childeren().anyMatch(child -> child.containsIlegalComponent(maxComponentSize, startDepth - 1)))
+        if (searchDistance >= 0 && children().anyMatch(child -> child.containsIllegalComponent(maxComponentSize, searchDistance - 1)))
             return true;
 
-        return startDepth < 0 && getComponentSize() > maxComponentSize;
+        return searchDistance < 0 && getComponentSize() > maxComponentSize;
     }
 
     /**
@@ -231,7 +229,7 @@ public class Node {
      * @return The number of nodes in a smallest node failure set.
      */
     public int numSelected() {
-        return childeren()
+        return children()
                 .mapToInt(node -> node.numSelected())
                 .sum()
                 + (isSelectedForFailureSet ? 1 : 0);
@@ -287,10 +285,10 @@ public class Node {
                 + indent + "isNearFailed = " + isNearFailedNode + "\n";
 //                + indent + "component size = " + getComponentSize() + "\n";
         if (hasChildren()) {
-            local += indent + "children: " + childeren().map(child -> child.name).reduce((s1, s2) -> s1 + ", " + s2).get() + "\n";
+            local += indent + "children: " + children().map(child -> child.name).reduce((s1, s2) -> s1 + ", " + s2).get() + "\n";
 
             return local
-                    + childeren().map(child -> child.toString(indent + "\t")).reduce((s1, s2) -> s1 + s2).get();
+                    + children().map(child -> child.toString(indent + "\t")).reduce((s1, s2) -> s1 + s2).get();
         }
         return local;
     }
@@ -351,6 +349,6 @@ public class Node {
      */
     public Stream<Node> leaves() {
         if (isLeaf()) return Stream.of(new Node[]{this});
-        else return childeren().flatMap(child -> child.leaves());
+        else return children().flatMap(child -> child.leaves());
     }
 }
