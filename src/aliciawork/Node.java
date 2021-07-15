@@ -68,8 +68,8 @@ public class Node {
 
     /**
      * Sets this node, and its neighbors, as being near a failed node
-     * This method may redundantly set nodes as nearFailedNode.  This can be 
-     * avoided by giving nearFailedNodes an ID, however for simplicities sake,
+     * This method may redundantly set nodes as nearFailedNode.  This redundancy 
+     * can be avoided by giving nearFailedNodes an ID, however for simplicities sake,
      * we accept the redundancy.
      */
     private void setNearSelected(int d) {
@@ -156,6 +156,10 @@ public class Node {
     public void setAsRoot() {
         setHeight(0);
     }
+    
+    public boolean isRoot(){
+        return getHeight() == 0;
+    }
 
     /**
      * Is this node a leaf
@@ -163,7 +167,7 @@ public class Node {
      * @return true if this node is a leaf, false otherwise
      */
     private boolean isLeaf() {
-        return children().findAny().isEmpty();
+        return neighbors.size() == 1 && !isRoot() || isRoot() && neighbors.isEmpty();
     }
 
 
@@ -182,7 +186,7 @@ public class Node {
         setComponentSizes();
 
         if (!parentCanHandleThis(neighborDistance, maxSurvivingComponentSize)
-                || (getHeight() == 0 && containsIllegalComponent(maxSurvivingComponentSize, -1)))
+                || (isRoot() && containsIllegalComponent(maxSurvivingComponentSize, -1)))
 
             selectNode(neighborDistance);
 
@@ -264,7 +268,7 @@ public class Node {
      * @return true if this node has children, false otherwise.
      */
     public boolean hasChildren() {
-        if (getHeight() == 0) return !neighbors.isEmpty();
+        if (isRoot()) return !neighbors.isEmpty();
         return neighbors.size() > 1;
     }
 
