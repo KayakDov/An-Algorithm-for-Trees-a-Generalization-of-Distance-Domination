@@ -1,4 +1,4 @@
-package aliciawork;
+package main;
 
 import java.util.ArrayList;
 import java.util.stream.Stream;
@@ -69,8 +69,10 @@ public class Node {
     /**
      * Sets this node, and its neighbors, as being near a failed node
      * This method may redundantly set nodes as nearFailedNode.  This redundancy 
-     * can be avoided by giving nearFailedNodes an ID, however for simplicities sake,
-     * we accept the redundancy.
+     * can be avoided by passing a hashset of visited nodes, if the present 
+     * Node is in the set and has already been visited, then stop.  If not,
+     * then add the present node to the list of visited nodes.However for the 
+     * human reader's sake we accept the redundancy.
      */
     private void setNearSelected(int d) {
         if (d < 0) return;
@@ -156,7 +158,11 @@ public class Node {
     public void setAsRoot() {
         setHeight(0);
     }
-    
+  
+    /**
+     * Is this node designated as a root node?
+     * @return true if the node is designated as a root node, false otherwise
+     */
     public boolean isRoot(){
         return getHeight() == 0;
     }
@@ -167,7 +173,7 @@ public class Node {
      * @return true if this node is a leaf, false otherwise
      */
     private boolean isLeaf() {
-        return neighbors.size() == 1 && !isRoot() || isRoot() && neighbors.isEmpty();
+        return neighbors.size() == 1 && !isRoot() || neighbors.isEmpty();
     }
 
 
@@ -185,6 +191,8 @@ public class Node {
 
         setComponentSizes();
 
+        if(componentSize < maxSurvivingComponentSize) return;
+        
         if (!parentCanHandleThis(neighborDistance, maxSurvivingComponentSize)
                 || (isRoot() && containsIllegalComponent(maxSurvivingComponentSize, -1)))
 
@@ -298,7 +306,7 @@ public class Node {
     }
 
     /**
-     * The hieght of this node.
+     * The height of this node.
      *
      * @return the height of this node.
      */
@@ -313,46 +321,5 @@ public class Node {
      */
     public String getName() {
         return name;
-    }
-
-    //////////////////extra code/////////////////////////////
-    /**
-     * The parent of this node.
-     */
-    private Node parent;
-
-    /**
-     * sets the parent of this node. This function should only be called after a
-     * root has been chosen and this node has been connected to the tree.
-     */
-    public void setParent() {
-        parent();
-    }
-
-    /**
-     * Calculates and sets the parent of this node if it has not been found.
-     * This function should only be called after a root has been chosen and this
-     * node has been connected to the tree.
-     *
-     * @return the parent of this node.
-     */
-    private Node parent() {
-
-        if (parent == null) return parent = neighbors
-                    .stream()
-                    .filter(node -> node.height < height)
-                    .findAny()
-                    .get();
-        return parent;
-    }
-
-    /**
-     * All of the leaves descended from this node.
-     *
-     * @return
-     */
-    public Stream<Node> leaves() {
-        if (isLeaf()) return Stream.of(new Node[]{this});
-        else return children().flatMap(child -> child.leaves());
     }
 }

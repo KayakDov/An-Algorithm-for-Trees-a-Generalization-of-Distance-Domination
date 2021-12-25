@@ -1,10 +1,10 @@
-package aliciawork;
+package main;
 
 /**
  *
  * @author Kayak
  */
-public class AliciaWork {
+public class Main {
 
     public static Node sampleTree() {
 //        Node A = new Node("A"),
