@@ -87,7 +87,7 @@ public class Main {
     public static void main(String[] args) {
         Node tree = sampleTree();
         
-        tree.setSelections(1, 3);
+        tree.setSelections(2, 3);
         
         System.out.println(tree);
     }

@@ -177,22 +177,18 @@ public class Node {
     /**
      * Finds a minimal set of nodes for failure.
      *
-     * @param maxCompSize the maximum allowable size of a
-     * surviving component, called k - 1 in the paper.
+     * @param badCompSize components of this size are forbidden
      * @param neighborDist the distance of a node from a failed node to be
      * considered near to it, called "l" in the paper.
      */
-    public void setSelections(int maxCompSize, int neighborDist) {
+    public void setSelections(int badCompSize, int neighborDist) {
 
-        children().forEachOrdered(child -> child.setSelections(maxCompSize, neighborDist));
-
+        children().forEach(child -> child.setSelections(badCompSize, neighborDist));
         
         setComponentSize();
 
-//        if (getComponentSize() <= maxCompSize) return;
-
-        if (!parentCanHandleThis(maxCompSize, neighborDist)
-                || (isRoot() && containsIllegalComp(maxCompSize, -1)))
+        if (!parentCanHandleThis(badCompSize, neighborDist)
+                || (isRoot() && containsIllegalComp(badCompSize, -1)))
             selectNode(neighborDist);
 
     }
@@ -204,26 +200,26 @@ public class Node {
      *
      * @param neighborDistance the distance of a node from a failed node so that
      * it is considered nearby.
-     * @param maxCompnonetSize the largest allowable component size.
+     * @param badCompSize components of this size are forbidden
      * @return if the parent being a failed node would remove the need for this
      * node to be a failed node, true. Otherwise false.
      */
-    private boolean parentCanHandleThis(int maxCompnonetSize, int neighborDistance) {
-        return !containsIllegalComp(maxCompnonetSize, neighborDistance - 1);
+    private boolean parentCanHandleThis(int badCompSize, int neighborDistance) {
+        return !containsIllegalComp(badCompSize, neighborDistance - 1);
     }
 
     /**
      *
-     * @param maxComponentSize The largest allowable component size.
+     * @param badCompSize components of this size are forbidden
      * @param searchDistance How much farther needs to be searched for an
      * illegal component.
      * @return true if any of the children have an illegal component size, false
      * otherwise.
      */
-    private boolean hasIllegalChild(int maxComponentSize, int searchDistance) {
+    private boolean hasIllegalChild(int badCompSize, int searchDistance) {
         return children().anyMatch(
                 child -> child.containsIllegalComp(
-                        maxComponentSize,
+                        badCompSize,
                         searchDistance - 1)
         );
     }
@@ -232,21 +228,21 @@ public class Node {
      * Does this sub tree contain any components that exceed the max component
      * size.
      *
-     * @param maxCompSize the maximum size a component may have without
+     * @param badCompSize components of this size are forbidden
      * requiring without requiring additional nodes to fail.
      * @param searchDist How much farther needs to be searched for an
      * illegal component
      * @return true if this node's sub tree contains components greater than the
      * max component size, false otherwise.
      */
-    private boolean containsIllegalComp(int maxCompSize, int searchDist) {
+    private boolean containsIllegalComp(int badCompSize, int searchDist) {
 
         if (searchDist < 0 && isNearFailedNode) return false;
 
-        if (searchDist >= 0 && hasIllegalChild(maxCompSize, searchDist))
+        if (searchDist >= 0 && hasIllegalChild(badCompSize, searchDist))
             return true;
 
-        return searchDist < 0 && getComponentSize() > maxCompSize;
+        return searchDist < 0 && getComponentSize() >= badCompSize;
     }
 
     /**
