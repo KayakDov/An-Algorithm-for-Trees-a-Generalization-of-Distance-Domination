@@ -13,7 +13,7 @@ public class Node {
      * The neighbors of this node.
      */
     private ArrayList<Node> neighbors;
-    
+
     /**
      * The distance of this node from the root.
      */
@@ -34,8 +34,8 @@ public class Node {
     private String name;
 
     /**
-     * A constructor. The caller of this constructor will need to set the name and
-     * neighbors manually.
+     * A constructor. The caller of this constructor will need to set the name
+     * and neighbors manually.
      */
     public Node() {
         neighbors = new ArrayList<>(2);
@@ -67,12 +67,15 @@ public class Node {
     }
 
     /**
-     * Sets this node, and its neighbors, as being near a failed node
-     * This method may redundantly set nodes as nearFailedNode.  This redundancy 
-     * can be avoided by passing a hashset of visited nodes, if the present 
-     * Node is in the set and has already been visited, then stop.  If not,
-     * then add the present node to the list of visited nodes.However for the 
-     * human reader's sake we accept the redundancy.
+     * Sets this node, and its neighbors, as being near a failed node This
+     * method may redundantly set nodes as nearFailedNode. This redundancy can
+     * be avoided by passing a hashset of visited nodes, if the present Node is
+     * in the set and has already been visited, then stop. If not, then add the
+     * present node to the list of visited nodes.However for the human reader's
+     * sake we accept the redundancy.
+     *
+     * @param d This node is considered to be near a failed node if the distance
+     * from the failed node is less than d.
      */
     private void setNearSelected(int d) {
         if (d < 0) return;
@@ -97,28 +100,29 @@ public class Node {
         setNearSelected(neighborDistance);
     }
 
-
     /**
      * The children of this node.
      *
      * @return a stream of children for this node.
      */
     public Stream<Node> children() {
-        return neighbors.stream().parallel().filter(node -> node.getHeight() > getHeight());
+        return neighbors.stream().parallel().filter(node -> node.getHeight()
+                > getHeight());
     }
 
-    private int componentSize;
+    private int compSize;
 
     /**
      * Sets and returns the component size of all elements in the subtree.
      *
      * @return the component size of this node.
      */
-    private int componentSize() {
-        if (isNearFailedNode) return componentSize = 0;
-        if (isLeaf()) return componentSize = 1;
+    private int setComponentSize() {
+        if (isNearFailedNode) return compSize = 0;
+        if (isLeaf()) return compSize = 1;
 
-        return componentSize = 1 + children().mapToInt(child -> child.componentSize()).sum();
+        return compSize = 1
+                + children().mapToInt(child -> child.setComponentSize()).sum();
     }
 
     /**
@@ -129,14 +133,7 @@ public class Node {
      * @return
      */
     public int getComponentSize() {
-        return componentSize;
-    }
-
-    /**
-     * Sets the components size of all elements in this subtree.
-     */
-    public void setComponentSizes() {
-        componentSize();
+        return compSize;
     }
 
     /**
@@ -158,12 +155,13 @@ public class Node {
     public void setAsRoot() {
         setHeight(0);
     }
-  
+
     /**
      * Is this node designated as a root node?
+     *
      * @return true if the node is designated as a root node, false otherwise
      */
-    public boolean isRoot(){
+    public boolean isRoot() {
         return getHeight() == 0;
     }
 
@@ -176,27 +174,25 @@ public class Node {
         return neighbors.size() == 1 && !isRoot() || neighbors.isEmpty();
     }
 
-
     /**
      * Finds a minimal set of nodes for failure.
      *
-     * @param maxSurvivingComponentSize the maximum allowable size of a
-     * surviving component, k.
-     * @param neighborDistance the distance of a node from a failed node to be
-     * considered near to it.
+     * @param maxCompSize the maximum allowable size of a
+     * surviving component, called k - 1 in the paper.
+     * @param neighborDist the distance of a node from a failed node to be
+     * considered near to it, called "l" in the paper.
      */
-    public void setSelections(int maxSurvivingComponentSize, int neighborDistance) {
+    public void setSelections(int maxCompSize, int neighborDist) {
 
-        children().forEach(child -> child.setSelections(maxSurvivingComponentSize, neighborDistance));
+        children().forEach(child -> child.setSelections(maxCompSize, neighborDist));
 
-        setComponentSizes();
+        setComponentSize();
 
-        if(componentSize < maxSurvivingComponentSize) return;
-        
-        if (!parentCanHandleThis(neighborDistance, maxSurvivingComponentSize)
-                || (isRoot() && containsIllegalComponent(maxSurvivingComponentSize, -1)))
+        if (getComponentSize() <= maxCompSize) return;
 
-            selectNode(neighborDistance);
+        if (!parentCanHandleThis(maxCompSize, neighborDist)
+                || (isRoot()&& containsIllegalComp(maxCompSize, -1)))
+            selectNode(neighborDist);
 
     }
 
@@ -211,28 +207,45 @@ public class Node {
      * @return if the parent being a failed node would remove the need for this
      * node to be a failed node, true. Otherwise false.
      */
-    private boolean parentCanHandleThis(int neighborDistance, int maxCompnonetSize) {
-        return !containsIllegalComponent(maxCompnonetSize, neighborDistance - 1);
+    private boolean parentCanHandleThis(int maxCompnonetSize, int neighborDistance) {
+        return !containsIllegalComp(maxCompnonetSize, neighborDistance - 1);
+    }
+
+    /**
+     *
+     * @param maxComponentSize The largest allowable component size.
+     * @param searchDistance How much farther needs to be searched for an
+     * illegal component.
+     * @return true if any of the children have an illegal component size, false
+     * otherwise.
+     */
+    private boolean hasIllegalChild(int maxComponentSize, int searchDistance) {
+        return children().anyMatch(
+                child -> child.containsIllegalComp(
+                        maxComponentSize,
+                        searchDistance - 1)
+        );
     }
 
     /**
      * Does this sub tree contain any components that exceed the max component
-     * size. 
-     * 
-     * @param maxComponentSize the maximum size a component may have without
+     * size.
+     *
+     * @param maxCompSize the maximum size a component may have without
      * requiring without requiring additional nodes to fail.
-     * @param searchDistance How much farther needs to be searched for an illegal component
+     * @param searchDist How much farther needs to be searched for an
+     * illegal component
      * @return true if this node's sub tree contains components greater than the
      * max component size, false otherwise.
      */
-    private boolean containsIllegalComponent(int maxComponentSize, int searchDistance) {
+    private boolean containsIllegalComp(int maxCompSize, int searchDist) {
 
-        if (searchDistance < 0 && isNearFailedNode) return false;
+        if (searchDist < 0 && isNearFailedNode) return false;
 
-        if (searchDistance >= 0 && children().anyMatch(child -> child.containsIllegalComponent(maxComponentSize, searchDistance - 1)))
+        if (searchDist >= 0 && hasIllegalChild(maxCompSize, searchDist))
             return true;
 
-        return searchDistance < 0 && getComponentSize() > maxComponentSize;
+        return searchDist < 0 && getComponentSize() > maxCompSize;
     }
 
     /**
@@ -297,10 +310,13 @@ public class Node {
                 + indent + "isNearFailed = " + isNearFailedNode + "\n";
 //                + indent + "component size = " + getComponentSize() + "\n";
         if (hasChildren()) {
-            local += indent + "children: " + children().map(child -> child.name).reduce((s1, s2) -> s1 + ", " + s2).get() + "\n";
+            local += indent + "children: "
+                    + children().map(child -> child.name).reduce((s1, s2) -> s1
+                    + ", " + s2).get() + "\n";
 
             return local
-                    + children().map(child -> child.toString(indent + "\t")).reduce((s1, s2) -> s1 + s2).get();
+                    + children().map(child -> child.toString(indent + "\t")).reduce((s1, s2) -> s1
+                    + s2).get();
         }
         return local;
     }
