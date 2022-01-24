@@ -184,14 +184,15 @@ public class Node {
      */
     public void setSelections(int maxCompSize, int neighborDist) {
 
-        children().forEach(child -> child.setSelections(maxCompSize, neighborDist));
+        children().forEachOrdered(child -> child.setSelections(maxCompSize, neighborDist));
 
+        
         setComponentSize();
 
-        if (getComponentSize() <= maxCompSize) return;
+//        if (getComponentSize() <= maxCompSize) return;
 
         if (!parentCanHandleThis(maxCompSize, neighborDist)
-                || (isRoot()&& containsIllegalComp(maxCompSize, -1)))
+                || (isRoot() && containsIllegalComp(maxCompSize, -1)))
             selectNode(neighborDist);
 
     }
@@ -299,6 +300,14 @@ public class Node {
     }
 
     /**
+     * The names of the children.
+     * @return 
+     */
+    private String childNames(){
+        return children().map(child -> child.name).reduce((s1, s2) -> s1
+                    + ", " + s2).orElse("");
+    }
+    /**
      * see @toString()
      *
      * @param indent the indentation to precede this toString.
@@ -310,10 +319,7 @@ public class Node {
                 + indent + "isNearFailed = " + isNearFailedNode + "\n";
 //                + indent + "component size = " + getComponentSize() + "\n";
         if (hasChildren()) {
-            local += indent + "children: "
-                    + children().map(child -> child.name).reduce((s1, s2) -> s1
-                    + ", " + s2).get() + "\n";
-
+            local += indent + "children: " + childNames() + "\n";
             return local
                     + children().map(child -> child.toString(indent + "\t")).reduce((s1, s2) -> s1
                     + s2).get();
