@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Neimand
+    given-names: E. Dov
+title: "Code Written An Algorithm for Trees a Generalization of Distance Domination"
+version: 1
+date-released: 2022-01-25
+url: "https://github.com/KayakDov/An-Algorithm-for-Trees-a-Generalization-of-Distance-Domination"

@@ -177,7 +177,7 @@ public class Node {
     /**
      * Finds a minimal set of nodes for failure.
      *
-     * @param badCompSize components of this size are forbidden
+     * @param badCompSize components of this size are forbidden.
      * @param neighborDist the distance of a node from a failed node to be
      * considered near to it, called "l" in the paper.
      */
@@ -200,7 +200,7 @@ public class Node {
      *
      * @param neighborDistance the distance of a node from a failed node so that
      * it is considered nearby.
-     * @param badCompSize components of this size are forbidden
+     * @param badCompSize components of this size are forbidden.
      * @return if the parent being a failed node would remove the need for this
      * node to be a failed node, true. Otherwise false.
      */
@@ -210,7 +210,7 @@ public class Node {
 
     /**
      *
-     * @param badCompSize components of this size are forbidden
+     * @param badCompSize components of this size are forbidden.
      * @param searchDistance How much farther needs to be searched for an
      * illegal component.
      * @return true if any of the children have an illegal component size, false
@@ -228,7 +228,7 @@ public class Node {
      * Does this sub tree contain any components that exceed the max component
      * size.
      *
-     * @param badCompSize components of this size are forbidden
+     * @param badCompSize components of this size are forbidden.
      * requiring without requiring additional nodes to fail.
      * @param searchDist How much farther needs to be searched for an
      * illegal component
