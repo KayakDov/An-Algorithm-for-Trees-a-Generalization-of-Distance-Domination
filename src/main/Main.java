@@ -6,6 +6,10 @@ package main;
  */
 public class Main {
 
+    /**
+     * A sample tree.
+     * @return 
+     */
     public static Node sampleTree() {
         Node A = new Node("A"),
                 AA = new Node(A, "2A"),
@@ -64,32 +68,78 @@ public class Main {
     }
     
     public static Node sampleTree2(){
-        Node A = new Node("A"),
-                AA = new Node(A, "AA"),
-                    AAA = new Node(AA, "AAA"),
-                AB = new Node(A, "AB"),
-                    ABA = new Node(AB, "ABA"),
-                        ABAA = new Node(ABA, "ABAA"),
-                            ABAAA = new Node(ABAA, "ABAAA"),
-                AC = new Node(A, "AC"),
-                    ACA = new Node(AC, "ACA"),
-                        ACAA = new Node(ACA, "ACAA"),
-                            ACAAA = new Node(ACAA, "ACAAA");
+        Node A = new Node(),
+                AA = new Node(A),
+                    AAA = new Node(AA),
+                AB = new Node(A),
+                    ABA = new Node(AB),
+                        ABAA = new Node(ABA),
+                            ABAAA = new Node(ABAA),
+                AC = new Node(A),
+                    ACA = new Node(AC),
+                        ACAA = new Node(ACA),
+                            ACAAA = new Node(ACAA);
                 
-        A.setAsRoot();
+        A.setAsRootAndName();
            
         return A;
     }
 
+    public static Node counterTree() {
+        Node root = new Node();
+        Node A = new Node(root),
+                AA = new Node(A),
+                AB = new Node(A),
+                    ABA = new Node(AB),
+                    ABB = new Node(AB),
+                        ABBA = new Node(ABB),
+                            ABBAA = new Node(ABBA),
+                                ABBAAA = new Node(ABBAA),
+                                    ABBAAAA = new Node(ABBAAA),
+                                        ABBAAAAA = new Node(ABBAAAA),
+                                           ABBAAAAAA = new Node(ABBAAAAA),
+                                               ABBAAAAAAA = new Node(ABBAAAAAA),
+                                                   ABBAAAAAAAA = new Node(ABBAAAAAAA),
+                                                        ABBAAAAAAAAA = new Node(ABBAAAAAAAA),
+                                                            ABBAAAAAAAAAA = new Node(ABBAAAAAAAAA),
+                                                            ABBAAAAAAAAAB = new Node(ABBAAAAAAAAA),                
+                        ABBB = new Node (ABB),
+                            ABBBA = new Node (ABBB),
+                                ABBBAA = new Node (ABBBA),
+                                ABBBAB = new Node (ABBBA),
+                                ABBBAC = new Node (ABBBA),
+                                ABBBAD = new Node (ABBBA),
+                                ABBBAE = new Node (ABBBA),
+                                ABBBAF = new Node (ABBBA),
+                                ABBBAG = new Node (ABBBA),
+                                ABBBAH = new Node (ABBBA),
+                                ABBBAI = new Node (ABBBA),
+                                ABBBAJ = new Node (ABBBA),
+                                ABBBAK = new Node (ABBBA),
+                                ABBBAL = new Node (ABBBA),
+                                ABBBAM = new Node (ABBBA),
+                    ABC = new Node(AB),
+                AC = new Node(A);
+
+        root.setAsRootAndName();
+           
+        return root;
+    }
+
+    
+    
     /**
      * @param args This code does not currently use command line arguments.
      */
     public static void main(String[] args) {
-        Node tree = sampleTree();
+        Node tree = counterTree();
         
-        tree.setSelections(2, 3);
+        tree.setSelections(2, 5);
         
         System.out.println(tree);
+
+//        for(int i = 65; i < 91; i++)
+//            System.out.print((char)i);//65 - 90
     }
 
 }

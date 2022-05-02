@@ -1,6 +1,7 @@
 package main;
 
 import java.util.ArrayList;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -10,10 +11,103 @@ import java.util.stream.Stream;
 public class Node {
 
     /**
+     * A class that lets this node have neigbors, and controlls access to them.
+     */
+    private class Neighbors {
+
+        /**
+         * The neighbors of this node.
+         */
+        private ArrayList<Node> children;
+        /**
+         * The parent of this node.
+         */
+        private Node parent;
+
+        /**
+         * A constructor.
+         * @param parent the parent of this node.
+         */
+        public Neighbors(Node parent) {
+            this.parent = parent;
+            this.children = new ArrayList<>();
+        }
+
+        /**
+         * A constructor for the root node.
+         */
+        public Neighbors() {
+            this(null);
+        }
+        
+        /**
+         * Sets the parent of this node.
+         * @param parent 
+         */
+        public void setParent(Node parent){
+            this.parent = parent;
+        }
+        /**
+         * Adds a child to this node.
+         * @param child 
+         */
+        public void addChild(Node child){
+            children.add(child);
+        }
+        /**
+         * The children of this node.
+         * @return 
+         */
+        public Stream<Node> children(){
+            return children.stream();
+        }
+        /**
+         * the neighbors of this node.
+         * @return 
+         */
+        public Stream<Node> all(){
+            if(isRoot()) return children();
+            return Stream.concat(Stream.of(parent), children());
+        }
+        
+        /**
+         * Gets the i'th child
+         * @param i the index of the child.
+         * @return 
+         */
+        public Node getChild(int i){
+            return children.get(i);
+        }
+        
+        /**
+         * The number of children.
+         * @return 
+         */
+        public int numChildren(){
+            return children.size();
+        }
+        
+        /**
+         * Does this node have children.
+         * @return 
+         */
+        public boolean hasChildren(){
+            return numChildren() > 0;
+        }
+        
+        /**
+         * Is this the root node.
+         * @return 
+         */
+        public boolean isRoot(){
+            return parent == null;
+        }
+    }
+    
+    /**
      * The neighbors of this node.
      */
-    private ArrayList<Node> neighbors;
-
+    Neighbors neighbors;
     /**
      * The distance of this node from the root.
      */
@@ -38,7 +132,7 @@ public class Node {
      * and neighbors manually.
      */
     public Node() {
-        neighbors = new ArrayList<>(2);
+        neighbors = new Neighbors();
         height = Integer.MAX_VALUE;
         isSelectedForFailureSet = false;
         isNearFailedNode = false;
@@ -63,7 +157,15 @@ public class Node {
      */
     public Node(Node parent, String name) {
         this(name);
-        addNeigbor(parent);
+        neighbors.setParent(parent);
+        parent.neighbors.addChild(this);
+    }
+    
+    /**
+     * A constructor.
+     */
+    public Node(Node parent){
+        this(parent, null);
     }
 
     /**
@@ -80,7 +182,7 @@ public class Node {
     private void setNearSelected(int d) {
         if (d < 0) return;
         isNearFailedNode = true;
-        neighbors.forEach(node -> node.setNearSelected(d - 1));
+        neighbors.all().forEach(node -> node.setNearSelected(d - 1));
     }
 
     /**
@@ -100,16 +202,6 @@ public class Node {
         setNearSelected(neighborDistance);
     }
 
-    /**
-     * The children of this node.
-     *
-     * @return a stream of children for this node.
-     */
-    public Stream<Node> children() {
-        return neighbors.stream().parallel().filter(node -> node.getHeight()
-                > getHeight());
-    }
-
     private int compSize;
 
     /**
@@ -119,10 +211,10 @@ public class Node {
      */
     private int setComponentSize() {
         if (isNearFailedNode) return compSize = 0;
-        if (isLeaf()) return compSize = 1;
+        if (!neighbors.hasChildren()) return compSize = 1;
 
         return compSize = 1
-                + children().mapToInt(child -> child.setComponentSize()).sum();
+                + neighbors.children().mapToInt(child -> child.setComponentSize()).sum();
     }
 
     /**
@@ -144,7 +236,7 @@ public class Node {
      */
     private void setHeight(int height) {
         this.height = height;
-        children().forEach(child -> child.setHeight(height + 1));
+        neighbors.children().forEach(child -> child.setHeight(height + 1));
 
     }
 
@@ -157,21 +249,51 @@ public class Node {
     }
 
     /**
+     * Sets this node as the root, and names all the nodes in the tree.
+     */
+    public void setAsRootAndName() {
+        setAsRoot();
+        setNames();
+    }
+
+    
+    
+    /**
+     * adds 1 to the digit immediately preceding the last letter of the proffered string. 
+     * @param input the proffered string
+     * @return a new string.
+     */
+    private static String doubleLetter(String input) {
+        int i = input.length() - 1;
+        while(i > 0 && Character.isDigit(input.charAt(i - 1))) i--;
+        String numString = input.substring(i, input.length()-1);
+        int numberFound = numString.isEmpty()?1: Integer.parseInt(numString);        
+        return input.substring(0,i) + (numberFound+1) + input.charAt(input.length()-1);
+    }
+    
+    /**
+     * Sets the names of every node in the tree.
+     */
+    private void setNames() {
+        if (name == null) name = "a";
+        IntStream.range(0, neighbors.numChildren())
+                .forEach(i -> {
+                    char addOn = (char)(i + (int)'a');
+                    if(addOn == name.charAt(name.length()-1)){
+                        neighbors.getChild(i).name = doubleLetter(name);
+                    }
+                    else neighbors.getChild(i).name = name + addOn;
+                });
+        neighbors.children().forEach(Node::setNames);
+    }
+
+    /**
      * Is this node designated as a root node?
      *
      * @return true if the node is designated as a root node, false otherwise
      */
     public boolean isRoot() {
         return getHeight() == 0;
-    }
-
-    /**
-     * Is this node a leaf
-     *
-     * @return true if this node is a leaf, false otherwise
-     */
-    private boolean isLeaf() {
-        return neighbors.size() == 1 && !isRoot() || neighbors.isEmpty();
     }
 
     /**
@@ -183,8 +305,8 @@ public class Node {
      */
     public void setSelections(int badCompSize, int neighborDist) {
 
-        children().forEach(child -> child.setSelections(badCompSize, neighborDist));
-        
+        neighbors.children.forEach(child -> child.setSelections(badCompSize, neighborDist));
+
         setComponentSize();
 
         if (!parentCanHandleThis(badCompSize, neighborDist)
@@ -217,7 +339,7 @@ public class Node {
      * otherwise.
      */
     private boolean hasIllegalChild(int badCompSize, int searchDistance) {
-        return children().anyMatch(
+        return neighbors.children().anyMatch(
                 child -> child.containsIllegalComp(
                         badCompSize,
                         searchDistance - 1)
@@ -228,10 +350,10 @@ public class Node {
      * Does this sub tree contain any components that exceed the max component
      * size.
      *
-     * @param badCompSize components of this size are forbidden.
-     * requiring without requiring additional nodes to fail.
-     * @param searchDist How much farther needs to be searched for an
-     * illegal component
+     * @param badCompSize components of this size are forbidden. requiring
+     * without requiring additional nodes to fail.
+     * @param searchDist How much farther needs to be searched for an illegal
+     * component
      * @return true if this node's sub tree contains components greater than the
      * max component size, false otherwise.
      */
@@ -251,23 +373,12 @@ public class Node {
      * @return The number of nodes in a smallest node failure set.
      */
     public int numSelected() {
-        return children()
+        return neighbors.children()
                 .mapToInt(node -> node.numSelected())
                 .sum()
                 + (isSelectedForFailureSet ? 1 : 0);
     }
 
-    /**
-     * Adds a neighbor to this node.
-     *
-     * @param neighbor the neighbor to be added.
-     * @return this node.
-     */
-    public final Node addNeigbor(Node neighbor) {
-        neighbors.add(neighbor);
-        neighbor.neighbors.add(this);
-        return this;
-    }
 
     /**
      * Sets the name of this node.
@@ -280,15 +391,6 @@ public class Node {
         return this;
     }
 
-    /**
-     * Does this node have children.
-     *
-     * @return true if this node has children, false otherwise.
-     */
-    public boolean hasChildren() {
-        if (isRoot()) return !neighbors.isEmpty();
-        return neighbors.size() > 1;
-    }
 
     @Override
     public String toString() {
@@ -297,12 +399,14 @@ public class Node {
 
     /**
      * The names of the children.
-     * @return 
+     *
+     * @return
      */
-    private String childNames(){
-        return children().map(child -> child.name).reduce((s1, s2) -> s1
-                    + ", " + s2).orElse("");
+    private String childNames() {
+        return neighbors.children().map(child -> child.name != null? child.name:"").reduce((s1, s2) -> s1
+                + ", " + s2).orElse("");
     }
+
     /**
      * see @toString()
      *
@@ -314,10 +418,10 @@ public class Node {
                 + indent + "failed = " + isSelectedForFailureSet + "\n"
                 + indent + "isNearFailed = " + isNearFailedNode + "\n";
 //                + indent + "component size = " + getComponentSize() + "\n";
-        if (hasChildren()) {
+        if (neighbors.hasChildren()) {
             local += indent + "children: " + childNames() + "\n";
             return local
-                    + children().map(child -> child.toString(indent + "\t")).reduce((s1, s2) -> s1
+                    + neighbors.children().map(child -> child.toString(indent + "\t")).reduce((s1, s2) -> s1
                     + s2).get();
         }
         return local;
