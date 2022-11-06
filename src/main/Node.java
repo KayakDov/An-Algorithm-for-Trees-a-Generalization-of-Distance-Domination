@@ -13,7 +13,7 @@ public class Node {
     /**
      * A class that lets this node have neigbors, and controlls access to them.
      */
-    private class Neighbors {
+    public class Neighbors {
 
         /**
          * The neighbors of this node.
@@ -61,6 +61,62 @@ public class Node {
         public Stream<Node> children(){
             return children.stream();
         }
+        
+        /**
+         * The descendants of the proffered generation. 0 returns the current 
+         * node, 1 children, 2 grandchildren, etc...
+         * @param gen
+         * @return 
+         */
+        public Stream<Node> descendentGen(int gen){
+            if(gen == 0) return Stream.of(Node.this);
+            return children().flatMap(child -> child.neighbors.descendentGen(gen - 1));
+        }
+        
+        /**
+         * All descendants closer than the given distance including this node
+         * @param upToAndIncludingGen
+         * @return 
+         */
+        public Stream<Node> descendents(int upToAndIncludingGen){
+            if(upToAndIncludingGen < 0) return Stream.of();
+            return Stream.concat(Stream.of(Node.this), children().flatMap(child -> child.neighbors.descendents(upToAndIncludingGen - 1)));
+        }
+        
+        /**
+         * The i'th grandparent of this node.  0 returns this node, 1 the parent,
+         * 2 the grandparent, etc...
+         * @param i
+         * @return 
+         */
+        public Node ancestor(int i){
+            if(i == 0) return Node.this;
+            if(isRoot()) return null;
+            return parent.neighbors.ancestor(i - 1);
+        }
+        
+        public Stream<Node> siblings(){
+            if(parent == null) return Stream.of();
+            return parent.neighbors.children().filter(child -> child != Node.this);
+        }
+        
+        /**
+         * All the nodes within the closed neighborhood of distance l of this node.
+         * @param dist
+         * @return 
+         */
+        public Stream<Node> neighborhood(int dist){
+            return Stream.concat(descendents(dist), 
+                    IntStream.range(0, dist + 1).boxed()
+                    .flatMap(i -> { 
+                        Node n = ancestor(i);
+                        if(n == null) return Stream.of();
+                        return Stream.concat(Stream.of(n),
+                            n.neighbors.siblings()
+                                .flatMap(sibling -> sibling.neighbors
+                                        .descendents(dist - i - 2)));
+                    }));
+        }
         /**
          * the neighbors of this node.
          * @return 
@@ -107,7 +163,7 @@ public class Node {
     /**
      * The neighbors of this node.
      */
-    Neighbors neighbors;
+    public Neighbors neighbors;
     /**
      * The distance of this node from the root.
      */
@@ -168,22 +224,22 @@ public class Node {
         this(parent, null);
     }
 
-    /**
-     * Sets this node, and its neighbors, as being near a failed node This
-     * method may redundantly set nodes as nearFailedNode. This redundancy can
-     * be avoided by passing a hashset of visited nodes, if the present Node is
-     * in the set and has already been visited, then stop. If not, then add the
-     * present node to the list of visited nodes.However for the human reader's
-     * sake we accept the redundancy.
-     *
-     * @param d This node is considered to be near a failed node if the distance
-     * from the failed node is less than d.
-     */
-    private void setNearSelected(int d) {
-        if (d < 0) return;
-        isNearFailedNode = true;
-        neighbors.all().forEach(node -> node.setNearSelected(d - 1));
-    }
+//    /**
+//     * Sets this node, and its neighbors, as being near a failed node This
+//     * method may redundantly set nodes as nearFailedNode. This redundancy can
+//     * be avoided by passing a hashset of visited nodes, if the present Node is
+//     * in the set and has already been visited, then stop. If not, then add the
+//     * present node to the list of visited nodes.However for the human reader's
+//     * sake we accept the redundancy.
+//     *
+//     * @param d This node is considered to be near a failed node if the distance
+//     * from the failed node is less than d.
+//     */
+//    private void setNearSelected(int d) {
+//        if (d < 0) return;
+//        isNearFailedNode = true;
+//        neighbors.all().forEach(node -> node.setNearSelected(d - 1));
+//    }
 
     /**
      * selects this node and its neighbors as failed nodes.
@@ -199,7 +255,7 @@ public class Node {
             throw new RuntimeException("This node is already selected");
 
         isSelectedForFailureSet = true;
-        setNearSelected(neighborDistance);
+        neighbors.neighborhood(neighborDistance).forEach(n -> {n.isNearFailedNode = true; n.compSize = 0;});
     }
 
     private int compSize;
@@ -297,78 +353,91 @@ public class Node {
     }
 
     /**
-     * Finds a minimal set of nodes for failure.
+     * Marks each node that needs to be in a minimum failure set.  If called from 
+     * outside Node, then it should be called on the root node.
      *
-     * @param badCompSize components of this size are forbidden.
-     * @param neighborDist the distance of a node from a failed node to be
+     * @param k components of this size are forbidden.
+     * @param l the distance of a node from a failed node to be
      * considered near to it, called "l" in the paper.
      */
-    public void setSelections(int badCompSize, int neighborDist) {
+    public void setSelections(int k, int l) {
 
-        neighbors.children.forEach(child -> child.setSelections(badCompSize, neighborDist));
+        neighbors.children.forEach(child -> child.setSelections(k, l));
 
         setComponentSize();
 
-        if (!parentCanHandleThis(badCompSize, neighborDist)
-                || (isRoot() && containsIllegalComp(badCompSize, -1)))
-            selectNode(neighborDist);
+        if (neighbors.descendentGen(l).anyMatch(n -> n.compSize >= k) || 
+           isRoot() && neighbors.neighborhood(l).anyMatch(n -> n.compSize >= k))
+            selectNode(l);
 
     }
 
-    /**
-     * When deciding if a node can be a failed node, we consider if the parent
-     * being a failed node would similarly prevent component sizes from being
-     * too big. .
-     *
-     * @param neighborDistance the distance of a node from a failed node so that
-     * it is considered nearby.
-     * @param badCompSize components of this size are forbidden.
-     * @return if the parent being a failed node would remove the need for this
-     * node to be a failed node, true. Otherwise false.
-     */
-    private boolean parentCanHandleThis(int badCompSize, int neighborDistance) {
-        return !containsIllegalComp(badCompSize, neighborDistance - 1);
-    }
+//    /**
+//     * When deciding if a node can be a failed node, we consider if the parent
+//     * being a failed node would similarly prevent component sizes from being
+//     * too big. .
+//     *
+//     * @param neighborDistance the distance of a node from a failed node so that
+//     * it is considered nearby.
+//     * @param badCompSize components of this size are forbidden.
+//     * @return if the parent being a failed node would remove the need for this
+//     * node to be a failed node, true. Otherwise false.
+//     */
+//    private boolean parentCanHandleThis(int badCompSize, int neighborDistance) {
+//        return !containsIllegalComp(badCompSize, neighborDistance - 1);
+//    }
+
+//    /**
+//     *
+//     * @param badCompSize components of this size are forbidden.
+//     * @param searchDistance How much farther needs to be searched for an
+//     * illegal component.
+//     * @return true if any of the children have an illegal component size, false
+//     * otherwise.
+//     */
+//    private boolean childHasIllegalComp(int badCompSize, int searchDistance) {
+//        return neighbors.children().anyMatch(
+//                child -> child.containsIllegalComp(
+//                        badCompSize,
+//                        searchDistance - 1)
+//        );
+//    }
+
+//    /**
+//     * Does this sub tree contain any components that exceed the max component
+//     * size.
+//     *
+//     * @param badCompSize components of this size are forbidden. requiring
+//     * without requiring additional nodes to fail.
+//     * @param searchDist How much farther needs to be searched for an illegal
+//     * component
+//     * @return true if this node's sub tree contains components greater than the
+//     * max component size, false otherwise.
+//     */
+//    private boolean containsIllegalComp(int badCompSize, int searchDist) {
+//
+//        if (searchDist < 0 && isNearFailedNode) return false;
+//
+//        if (searchDist >= 0 && childHasIllegalComp(badCompSize, searchDist))
+//            return true;
+//
+//        return searchDist < 0 && getComponentSize() >= badCompSize;
+//    }
+    
+   
+//    /**
+//     * A stream of nodes that are not neighbors of failed nodes and are children 
+//     * of the furthest descendants of this node.
+//     * @param searchDist
+//     * @return 
+//     */
+//    private Stream<Node> childrenOfNeighbors(int blastRadius){
+//        if(blastRadius < 0) return isNearFailedNode? Stream.of():Stream.of(this);
+//        return neighbors.children().flatMap(child -> child.ch)
+//    }
 
     /**
-     *
-     * @param badCompSize components of this size are forbidden.
-     * @param searchDistance How much farther needs to be searched for an
-     * illegal component.
-     * @return true if any of the children have an illegal component size, false
-     * otherwise.
-     */
-    private boolean hasIllegalChild(int badCompSize, int searchDistance) {
-        return neighbors.children().anyMatch(
-                child -> child.containsIllegalComp(
-                        badCompSize,
-                        searchDistance - 1)
-        );
-    }
-
-    /**
-     * Does this sub tree contain any components that exceed the max component
-     * size.
-     *
-     * @param badCompSize components of this size are forbidden. requiring
-     * without requiring additional nodes to fail.
-     * @param searchDist How much farther needs to be searched for an illegal
-     * component
-     * @return true if this node's sub tree contains components greater than the
-     * max component size, false otherwise.
-     */
-    private boolean containsIllegalComp(int badCompSize, int searchDist) {
-
-        if (searchDist < 0 && isNearFailedNode) return false;
-
-        if (searchDist >= 0 && hasIllegalChild(badCompSize, searchDist))
-            return true;
-
-        return searchDist < 0 && getComponentSize() >= badCompSize;
-    }
-
-    /**
-     * The number of nodes in a smallest node failure set.
+     * The number of nodes in a minimum failure set.
      *
      * @return The number of nodes in a smallest node failure set.
      */
@@ -414,12 +483,12 @@ public class Node {
      * @return an indented String.
      */
     public String toString(String indent) {
-        String local = indent + name + ": " + "\n"
-                + indent + "failed = " + isSelectedForFailureSet + "\n"
-                + indent + "isNearFailed = " + isNearFailedNode + "\n";
+        String local = indent + name + ": " + (isSelectedForFailureSet?"O":isNearFailedNode?"X":"") + "\n";
+//                + indent + "failed = " + isSelectedForFailureSet + "\n"
+//                + indent + "isNearFailed = " + isNearFailedNode + "\n";
 //                + indent + "component size = " + getComponentSize() + "\n";
         if (neighbors.hasChildren()) {
-            local += indent + "children: " + childNames() + "\n";
+//            local += indent + "children: " + childNames() + "\n";
             return local
                     + neighbors.children().map(child -> child.toString(indent + "\t")).reduce((s1, s2) -> s1
                     + s2).get();

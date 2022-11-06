@@ -132,14 +132,12 @@ public class Main {
      * @param args This code does not currently use command line arguments.
      */
     public static void main(String[] args) {
-        Node tree = counterTree();
+        Node tree = sampleTree();//counterTree();
         
-        tree.setSelections(2, 5);
+        tree.setSelections(1, 3);
         
         System.out.println(tree);
 
-//        for(int i = 65; i < 91; i++)
-//            System.out.print((char)i);//65 - 90
     }
 
 }
