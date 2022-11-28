@@ -78,7 +78,7 @@ public class Main {
                         ACAA = new Node(ACA),
                             ACAAA = new Node(ACAA);
                 
-        A.name();
+        A.name.name();
            
         return A;
     }
@@ -119,7 +119,7 @@ public class Main {
                     ABC = new Node(AB),
                 AC = new Node(A);
 
-        root.name();
+        root.name.name();
            
         return root;
     }
@@ -130,9 +130,9 @@ public class Main {
      * @param args This code does not currently use command line arguments.
      */
     public static void main(String[] args) {
-        Node tree = counterTree();//sampleTree();
+        Node tree = sampleTree();//sampleTree();
         
-        tree.setSelections(3, 2);
+        tree.buildMinFailureSet(3, 2);
         
         System.out.println(tree);
 
