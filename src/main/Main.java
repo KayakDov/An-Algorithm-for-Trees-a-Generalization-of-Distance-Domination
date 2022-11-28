@@ -61,8 +61,6 @@ public class Main {
                             ABDCC = new Node(ABDC, "ABD2C"),
                         ABDD = new Node(ABD, "AB2D"),
                 AC = new Node(A, "AC aka C1");
-
-        A.setAsRoot();
            
         return A;
     }
@@ -80,7 +78,7 @@ public class Main {
                         ACAA = new Node(ACA),
                             ACAAA = new Node(ACAA);
                 
-        A.setAsRootAndName();
+        A.name();
            
         return A;
     }
@@ -121,7 +119,7 @@ public class Main {
                     ABC = new Node(AB),
                 AC = new Node(A);
 
-        root.setAsRootAndName();
+        root.name();
            
         return root;
     }
@@ -132,9 +130,9 @@ public class Main {
      * @param args This code does not currently use command line arguments.
      */
     public static void main(String[] args) {
-        Node tree = sampleTree();//counterTree();
+        Node tree = counterTree();//sampleTree();
         
-        tree.setSelections(1, 3);
+        tree.setSelections(3, 2);
         
         System.out.println(tree);
 
