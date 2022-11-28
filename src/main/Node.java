@@ -1,6 +1,8 @@
 package main;
 
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -268,7 +270,6 @@ public class Node {
      * The neighbors of this node.
      */
     public Neighbors neighbors;
-
     /**
      * Has this node been selected for the failure set, S.
      */
@@ -278,11 +279,15 @@ public class Node {
      * contain the ID of that failure.
      */
     private boolean isNearFailedNode;
-
     /**
      * The name of this node.
      */
     public Name name;
+    /**
+     * The saved size of this component.  This may need to be updated when 
+     * a node is added to the failure set.
+     */
+    private int compSize;
 
     /**
      * A constructor. The caller of this constructor will need to set the name
@@ -338,8 +343,6 @@ public class Node {
                 .forEach(n -> n.isNearFailedNode = true);
     }
 
-    private int compSize;
-
     /**
      * Sets and returns the component size of all elements in the subtree.
      *
@@ -355,7 +358,6 @@ public class Node {
                 + neighbors.children().mapToInt(child -> child.setComponentSizes()).sum();
     }
 
-
     /**
      * Marks each node that needs to be in a minimum failure set. If called from
      * outside Node, then it should be called on the root node.
@@ -365,7 +367,6 @@ public class Node {
      * to it, called "l" in the paper.
      */
     public void buildMinFailureSet(int k, int l) {
-
         neighbors.children.forEach(child -> child.buildMinFailureSet(k, l));
 
         setComponentSizes();
@@ -374,8 +375,6 @@ public class Node {
                 || neighbors.isRoot()
                 && neighbors.neighborhood(l).anyMatch(n -> n.compSize >= k))
             addToFailureSet(l);
-        
-        
     }
 
     /**
@@ -390,6 +389,17 @@ public class Node {
                 .sum();
     }
 
+    /**
+     * Names of failed nodes.
+     * @return 
+     */
+    public Set<String> failureSet(){
+        return neighbors.descendents(Integer.MAX_VALUE)
+                .filter(node -> node.isSelectedForFailureSet)
+                .map(node -> node.name.name)
+                .collect(Collectors.toSet());
+    }
+    
     @Override
     public String toString() {
         return toString("");

@@ -134,7 +134,7 @@ public class Main {
         
         tree.buildMinFailureSet(3, 2);
         
-        System.out.println(tree);
+        System.out.println(tree.failureSet());
 
     }
 
