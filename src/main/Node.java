@@ -333,10 +333,6 @@ public class Node {
      * to be used in order to cancel the failure.
      */
     private void addToFailureSet(int neighborDistance) {
-
-        if (isSelectedForFailureSet)
-            throw new RuntimeException("This node is already selected");
-
         isSelectedForFailureSet = true;
         neighbors.neighborhood(neighborDistance)
                 .forEach(n -> n.isNearFailedNode = true);
